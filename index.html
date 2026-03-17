@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlackJack</title>
+<link href="https://fonts.Lucky21.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:         #f1f3f4;
+  --surface:    #ffffff;
+  --felt:       #1e7e4a;
+  --felt-dark:  #155d36;
+  --felt-rim:   #0f4526;
+  --blue:       #1a73e8;
+  --blue-h:     #1557b0;
+  --red:        #d93025;
+  --text-pri:   #202124;
+  --text-sec:   #5f6368;
+  --border:     #dadce0;
+  --sh-sm:      0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+  --sh-md:      0 4px 12px rgba(0,0,0,.15);
+  --sh-card:    2px 4px 10px rgba(0,0,0,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Roboto',sans-serif;background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+
+/* Top bar */
+.topbar{width:100%;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;height:56px;gap:12px;box-shadow:var(--sh-sm);position:sticky;top:0;z-index:10;}
+.topbar-logo{display:flex;align-items:center;gap:10px;font-family:'Google Sans',sans-serif;font-size:18px;font-weight:500;color:var(--text-pri);}
+.topbar-div{width:1px;height:24px;background:var(--border);margin:0 4px;}
+.topbar-title{font-family:'Google Sans',sans-serif;font-size:18px;font-weight:400;color:var(--text-sec);}
+.topbar-spacer{flex:1;}
+.topbar-btn{display:flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-family:'Google Sans',sans-serif;font-size:14px;font-weight:500;color:var(--text-pri);cursor:pointer;transition:background .15s,box-shadow .15s;}
+.topbar-btn:hover{background:var(--bg);box-shadow:var(--sh-sm);}
+
+/* Layout */
+.game-wrap{width:100%;max-width:820px;padding:20px 16px 40px;display:flex;flex-direction:column;gap:16px;}
+
+/* Stat chips */
+.stat-bar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.stat-chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-family:'Google Sans',sans-serif;font-size:13px;color:var(--text-sec);box-shadow:var(--sh-sm);display:flex;align-items:center;gap:6px;}
+.stat-chip strong{color:var(--text-pri);font-weight:500;}
+
+/* Table */
+.table{background:var(--felt);border-radius:24px;border:6px solid var(--felt-rim);box-shadow:var(--sh-md),inset 0 0 60px rgba(0,0,0,.15);padding:28px 24px;display:flex;flex-direction:column;gap:20px;position:relative;overflow:hidden;}
+.table::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0,rgba(255,255,255,.03) 1px,transparent 1px,transparent 6px);pointer-events:none;}
+
+/* Zone */
+.zone{display:flex;flex-direction:column;gap:10px;}
+.zone-header{display:flex;align-items:center;gap:10px;}
+.zone-label{font-family:'Google Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.55);}
+.count-pill{background:rgba(0,0,0,.25);border-radius:12px;padding:2px 10px;font-family:'Google Sans',sans-serif;font-size:13px;font-weight:500;color:#fff;min-width:32px;text-align:center;transition:background .2s;}
+.count-pill.bust{background:rgba(217,48,37,.7);}
+.count-pill.bj{background:rgba(26,115,232,.7);}
+
+/* Cards row */
+.cards-row{display:flex;flex-wrap:wrap;gap:8px;min-height:96px;align-items:flex-start;}
+
+/* Card */
+.card{width:64px;height:92px;background:#fff;border-radius:8px;box-shadow:var(--sh-card);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;font-family:'Google Sans',sans-serif;font-weight:700;font-size:13px;position:relative;animation:deal .3s cubic-bezier(.34,1.56,.64,1) both;flex-shrink:0;border:1px solid rgba(0,0,0,.06);}
+@keyframes deal{from{transform:translateY(-40px) scale(.85);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
+.card.red{color:var(--red);}
+.card.black{color:#202124;}
+.card-tl{line-height:1.1;}
+.card-rank{font-size:13px;}
+.card-suit{font-size:10px;}
+.card-center{text-align:center;font-size:26px;line-height:1;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.card-br{align-self:flex-end;transform:rotate(180deg);line-height:1.1;}
+
+/* Hole */
+.card-hole{width:64px;height:92px;background:repeating-linear-gradient(135deg,#1a73e8 0,#1a73e8 6px,#1557b0 6px,#1557b0 12px);border-radius:8px;border:2px solid rgba(255,255,255,.3);box-shadow:var(--sh-card);display:flex;align-items:center;justify-content:center;animation:deal .3s cubic-bezier(.34,1.56,.64,1) both;flex-shrink:0;}
+
+/* Split divider */
+.split-div{width:2px;height:92px;background:rgba(255,255,255,.3);border-radius:2px;align-self:center;margin:0 4px;}
+
+.felt-divider{height:1px;background:rgba(255,255,255,.12);}
+
+/* Message */
+.message-wrap{text-align:center;min-height:48px;display:flex;align-items:center;justify-content:center;}
+.message{font-family:'Google Sans',sans-serif;font-size:15px;color:rgba(255,255,255,.85);letter-spacing:.3px;}
+.message.result{font-size:22px;font-weight:700;letter-spacing:.5px;animation:pop .35s cubic-bezier(.34,1.56,.64,1);}
+@keyframes pop{from{transform:scale(.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+.message.win{color:#81c995;}
+.message.lose{color:#f28b82;}
+.message.tie{color:#fdd663;}
+.message.info{color:rgba(255,255,255,.7);font-size:13px;}
+
+/* Buttons */
+.actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.btn{font-family:'Google Sans',sans-serif;font-size:14px;font-weight:500;padding:9px 20px;border-radius:20px;border:none;cursor:pointer;transition:background .15s,box-shadow .15s,transform .1s;letter-spacing:.25px;display:flex;align-items:center;gap:6px;}
+.btn:active{transform:scale(.96);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover:not(:disabled){background:var(--blue-h);box-shadow:0 2px 8px rgba(26,115,232,.4);}
+.btn-secondary{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.3);}
+.btn-secondary:hover:not(:disabled){background:rgba(255,255,255,.28);}
+.btn-new{background:var(--surface);color:var(--blue);border:1px solid var(--border);box-shadow:var(--sh-sm);}
+.btn-new:hover{background:var(--bg);}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;animation:fadein .18s ease;backdrop-filter:blur(3px);}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border-radius:20px;padding:32px 40px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.2);max-width:320px;width:90%;animation:slideup .22s cubic-bezier(.34,1.56,.64,1);}
+@keyframes slideup{from{transform:translateY(24px) scale(.95);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
+.modal h2{font-family:'Google Sans',sans-serif;font-size:20px;font-weight:500;color:var(--text-pri);margin-bottom:6px;}
+.modal p{font-size:14px;color:var(--text-sec);margin-bottom:24px;}
+.modal-preview{font-size:48px;margin-bottom:12px;}
+.modal-btns{display:flex;gap:12px;justify-content:center;}
+.modal-btns .btn{font-size:16px;padding:10px 28px;border-radius:12px;}
+
+/* Score card */
+.score-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 24px;display:flex;justify-content:space-around;box-shadow:var(--sh-sm);}
+.score-item{text-align:center;}
+.score-label{font-size:11px;color:var(--text-sec);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.score-value{font-family:'Google Sans',sans-serif;font-size:22px;font-weight:500;color:var(--text-pri);}
+
+@media(max-width:500px){
+  .card,.card-hole{width:54px;height:80px;}
+  .card-center{font-size:20px;}
+  .table{padding:20px 16px;border-radius:18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    Lucky21
+  </div>
+  <div class="topbar-div"></div>
+  <div class="topbar-title">BlackJack</div>
+  <div class="topbar-spacer"></div>
+  <button class="topbar-btn" onclick="newGame()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+    New Game
+  </button>
+</div>
+
+<div class="game-wrap">
+
+  <div class="stat-bar">
+    <div class="stat-chip">Wins <strong id="statWins">0</strong></div>
+    <div class="stat-chip">Losses <strong id="statLosses">0</strong></div>
+    <div class="stat-chip">Ties <strong id="statTies">0</strong></div>
+    <div class="stat-chip">Streak <strong id="statStreak">0</strong></div>
+  </div>
+
+  <div class="table">
+
+    <div class="zone">
+      <div class="zone-header">
+        <div class="zone-label">Dealer</div>
+        <div class="count-pill" id="dealerPill">—</div>
+      </div>
+      <div class="cards-row" id="dealerRow"></div>
+    </div>
+
+    <div class="felt-divider"></div>
+
+    <div class="message-wrap">
+      <div class="message" id="msg">Dealing…</div>
+    </div>
+
+    <div class="felt-divider"></div>
+
+    <div class="zone">
+      <div class="zone-header">
+        <div class="zone-label">You</div>
+        <div class="count-pill" id="playerPill">0</div>
+        <div class="zone-label" id="splitLabel" style="display:none;margin-left:16px;">Split</div>
+        <div class="count-pill" id="splitPill" style="display:none;">0</div>
+      </div>
+      <div class="cards-row" id="playerRow"></div>
+    </div>
+
+    <div class="actions" id="actionBar">
+      <button class="btn btn-primary"   id="btnHit"   onclick="doHit()">Hit</button>
+      <button class="btn btn-secondary" id="btnStand" onclick="doStand()">Stand</button>
+      <button class="btn btn-secondary" id="btnSplit" onclick="doSplit()" style="display:none">Split</button>
+      <button class="btn btn-new"       id="btnNew"   onclick="newGame()" style="display:none">New Game</button>
+    </div>
+
+  </div>
+
+  <div class="score-card">
+    <div class="score-item"><div class="score-label">Your Count</div><div class="score-value" id="scPlayer">—</div></div>
+    <div class="score-item"><div class="score-label">Dealer Count</div><div class="score-value" id="scDealer">—</div></div>
+    <div class="score-item"><div class="score-label">Cards Left</div><div class="score-value" id="scDeck">52</div></div>
+  </div>
+
+</div>
+
+
+
+<script>
+// ── Data structures ──────────────────────────────────────────
+
+class DynamicArray {
+  constructor() { this._a = []; }
+  append(v)    { this._a.push(v); }
+  get(i)       { return this._a[i]; }
+  size()       { return this._a.length; }
+  toString()   { return this._a.join(', '); }
+  removeByIdx(i){ this._a.splice(i,1); }
+  removeByVal(v){ const i=this._a.indexOf(v); if(i!==-1) this._a.splice(i,1); }
+}
+
+class CardArray {
+  constructor(){ this._a=new Array(52).fill(null); this._sz=0; }
+  append(v)    { this._a[this._sz++]=v; }
+  get(i)       { return this._a[i]; }
+  size()       { return this._sz; }
+  remove(i)    { const o=this._a[i]; for(let j=i;j<this._sz-1;j++) this._a[j]=this._a[j+1]; this._a[--this._sz]=null; return o; }
+}
+
+class CardDeck {
+  constructor(){
+    this.cards=new CardArray();
+    this.playersCards=new DynamicArray();
+    this.dealersCards=new DynamicArray();
+    this.splitDeck=new DynamicArray();
+    const suits=['Hearts','Diamonds','Clubs','Spades'];
+    const ranks=['Ace','2','3','4','5','6','7','8','9','10','Jack','Queen','King'];
+    for(const s of suits) for(const r of ranks) this.cards.append(`${r} Of ${s}`);
+  }
+  getCard(i)              { return this.cards.get(i); }
+  removeCard(i)           { return this.cards.remove(i); }
+  deckSize()              { return this.cards.size(); }
+  playerAppend(v)         { this.playersCards.append(v); }
+  getPlayersCard(i)       { return this.playersCards.get(i); }
+  removePlayerCard(name)  { this.playersCards.removeByVal(name); }
+  playerCardSize()        { return this.playersCards.size(); }
+  dealerAppend(v)         { this.dealersCards.append(v); }
+  dealerCardSize()        { return this.dealersCards.size(); }
+  splitDeckAppend(v)      { this.splitDeck.append(v); }
+  splitDeckSize()         { return this.splitDeck.size(); }
+  returnPlayerCards()     { return this.playersCards.toString(); }
+  returnDealerCards()     { return this.dealersCards.toString(); }
+  returnDealerFirstCard() { return this.dealersCards.size() ? this.dealersCards.get(0) : 'none'; }
+  returnSplitDeck()       { return this.splitDeck.toString(); }
+}
+
+// ── State ────────────────────────────────────────────────────
+
+let deck, playerCount, dealerCount, dealerAces, playerAces;
+let playerMoves, dealerMoves;
+let splitCount, isSplit, playingSplit, gameOver;
+let wins=0, losses=0, ties=0, streak=0;
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function rankValue(card){
+  const r=card.split(' ')[0];
+  return {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'Jack':10,'Queen':10,'King':10}[r]||0;
+}
+function drawRandom(){ const i=Math.floor(Math.random()*deck.deckSize()); const c=deck.getCard(i); deck.removeCard(i); return c; }
+function suitOf(c){ return c.includes('Hearts')?'♥':c.includes('Diamonds')?'♦':c.includes('Clubs')?'♣':'♠'; }
+function isRed(c) { return c.includes('Hearts')||c.includes('Diamonds'); }
+function rankLabel(c){ const r=c.split(' ')[0]; return {Jack:'J',Queen:'Q',King:'K',Ace:'A'}[r]||r; }
+
+// ── Ace logic (matches Java: always 11, auto-convert to 1 if bust) ──
+
+function playerHit(){
+  const card=drawRandom();
+  if(card.startsWith('Ace')){
+    playerCount+=11;
+    playerAces++;
+  } else {
+    playerCount+=rankValue(card);
+  }
+  if(playerCount>21&&playerAces>0){
+    playerCount-=10;
+    playerAces--;
+  }
+  playerMoves++;
+  deck.playerAppend(card);
+}
+
+function dealerDraw(){
+  const card=drawRandom();
+  if(card.startsWith('Ace')){ dealerCount+=11; dealerAces++; }
+  else dealerCount+=rankValue(card);
+  while(dealerCount>21&&dealerAces>0){ dealerCount-=10; dealerAces--; }
+  dealerMoves++;
+  deck.dealerAppend(card);
+}
+
+// Split hand hit (matches Java splitHit: Ace = 11 if <=21, else 1)
+function splitHit(){
+  const card=drawRandom();
+  if(card.startsWith('Ace')){
+    if(splitCount+11<=21) splitCount+=11;
+    else splitCount+=1;
+  } else {
+    splitCount+=rankValue(card);
+  }
+  deck.splitDeckAppend(card);
+}
+
+function canSplit(){
+  if(deck.playerCardSize()!==2) return false;
+  return deck.getPlayersCard(0).split(' ')[0]===deck.getPlayersCard(1).split(' ')[0];
+}
+
+// ── Card elements ────────────────────────────────────────────
+
+function makeCard(name, delay=0){
+  const el=document.createElement('div');
+  el.className='card '+(isRed(name)?'red':'black');
+  el.style.animationDelay=delay+'s';
+  const sym=suitOf(name), rnk=rankLabel(name);
+  el.innerHTML=`<div class="card-tl"><div class="card-rank">${rnk}</div><div class="card-suit">${sym}</div></div><div class="card-center">${sym}</div><div class="card-br"><div class="card-rank">${rnk}</div><div class="card-suit">${sym}</div></div>`;
+  return el;
+}
+function makeHole(){
+  const el=document.createElement('div'); el.className='card-hole'; return el;
+}
+
+// ── Render ───────────────────────────────────────────────────
+
+function renderDealer(hideHole){
+  const row=document.getElementById('dealerRow'); row.innerHTML='';
+  for(let i=0;i<deck.dealerCardSize();i++)
+    row.appendChild(i===1&&hideHole ? makeHole() : makeCard(deck.dealersCards.get(i), i*0.07));
+  const pill=document.getElementById('dealerPill');
+  pill.textContent=hideHole?'?':dealerCount;
+  pill.className='count-pill'+(hideHole?'':dealerCount>21?' bust':dealerCount===21?' bj':'');
+  document.getElementById('scDealer').textContent=hideHole?'?':dealerCount;
+}
+
+function renderPlayer(){
+  const row=document.getElementById('playerRow'); row.innerHTML='';
+  for(let i=0;i<deck.playerCardSize();i++) row.appendChild(makeCard(deck.playersCards.get(i),(4+i)*0.07));
+  if(isSplit){
+    const div=document.createElement('div'); div.className='split-div'; row.appendChild(div);
+    for(let i=0;i<deck.splitDeck.size();i++) row.appendChild(makeCard(deck.splitDeck.get(i),(4+deck.playerCardSize()+1+i)*0.07));
+    document.getElementById('splitLabel').style.display='';
+    document.getElementById('splitPill').style.display='';
+    const sp=document.getElementById('splitPill');
+    sp.textContent=splitCount;
+    sp.className='count-pill'+(splitCount>21?' bust':splitCount===21?' bj':'');
+  } else {
+    document.getElementById('splitLabel').style.display='none';
+    document.getElementById('splitPill').style.display='none';
+  }
+  const pp=document.getElementById('playerPill');
+  pp.textContent=playerCount;
+  pp.className='count-pill'+(playerCount>21?' bust':playerCount===21?' bj':'');
+  document.getElementById('scPlayer').textContent=playerCount;
+  document.getElementById('scDeck').textContent=deck.deckSize();
+}
+
+function setMsg(text,cls=''){
+  const el=document.getElementById('msg');
+  el.textContent=text; el.className='message '+cls;
+}
+
+function setButtons(active){
+  document.getElementById('btnHit').disabled=!active;
+  document.getElementById('btnStand').disabled=!active;
+  document.getElementById('btnSplit').style.display=(active&&!isSplit&&canSplit())?'':'none';
+  document.getElementById('btnNew').style.display=gameOver?'':'none';
+}
+
+function updateStats(){
+  document.getElementById('statWins').textContent=wins;
+  document.getElementById('statLosses').textContent=losses;
+  document.getElementById('statTies').textContent=ties;
+  document.getElementById('statStreak').textContent=(streak>0?'+':'')+streak;
+}
+
+// ── Game flow ─────────────────────────────────────────────────
+
+function newGame(){
+  deck=new CardDeck();
+  playerCount=dealerCount=dealerAces=playerAces=playerMoves=dealerMoves=splitCount=0;
+  isSplit=playingSplit=gameOver=false;
+  document.getElementById('dealerRow').innerHTML='';
+  document.getElementById('playerRow').innerHTML='';
+
+  dealerDraw(); dealerDraw();
+  renderDealer(true);
+
+  playerHit(); playerHit();
+  renderPlayer();
+
+  if(playerCount===21){
+    renderDealer(false);
+    setMsg('Natural Blackjack! You WIN! 🎉','result win');
+    endRound('win');
+    return;
+  }
+  setMsg(canSplit()?'Hit, Stand, or Split?':'Hit or Stand?');
+  setButtons(true);
+}
+
+function doHit(){
+  if(gameOver||playingSplit) return;
+  playerHit();
+  renderPlayer();
+  checkPlayerStatus();
+}
+
+function checkPlayerStatus(){
+  if(playerCount>21){
+    renderDealer(false);
+    setMsg('Bust! Dealer wins.','result lose');
+    endRound('loss');
+  } else if(playerCount===21){
+    setMsg('BlackJack! You win! 🎉','result win');
+    endRound('win');
+  } else {
+    setMsg('Hit or Stand?');
+    setButtons(true);
+  }
+}
+
+function doStand(){
+  if(gameOver||playingSplit) return;
+  while(dealerCount<17) dealerDraw();
+  renderDealer(false);
+  setButtons(false);
+
+  setTimeout(()=>{
+    if(isSplit){
+      const r=resolveVsDealer(playerCount);
+      setMsg('Main hand: '+r.msg,'result '+r.cls);
+      setTimeout(()=>startSplitTurn(),1400);
+    } else {
+      const r=resolveVsDealer(playerCount);
+      setMsg(r.msg,'result '+r.cls);
+      endRound(r.outcome);
+    }
+  },500);
+}
+
+function doSplit(){
+  if(gameOver||isSplit||!canSplit()) return;
+  const splitCard=deck.getPlayersCard(1);
+  deck.removePlayerCard(splitCard);
+
+  let dv;
+  if(splitCard.startsWith('Ace')){
+    if(playerAces>0){ dv=11; playerAces--; }
+    else dv=1;
+  } else dv=rankValue(splitCard);
+  playerCount-=dv;
+  deck.splitDeckAppend(splitCard);
+  splitCount=dv; isSplit=true;
+
+  renderPlayer();
+  setMsg('Split! Dealing one card to each hand…');
+  setButtons(false);
+
+  setTimeout(()=>{
+    playerHit();
+    renderPlayer();
+    setTimeout(()=>{
+      splitHit();
+      renderPlayer();
+      setMsg('Hit or Stand on your main hand?');
+      setButtons(true);
+    },400);
+  },400);
+}
+
+// ── Split hand play ───────────────────────────────────────────
+
+function startSplitTurn(){
+  playingSplit=true;
+  setMsg('Now playing your split hand — Hit or Stand?','info');
+  document.getElementById('btnHit').disabled=false;
+  document.getElementById('btnStand').disabled=false;
+  document.getElementById('btnSplit').style.display='none';
+  document.getElementById('btnNew').style.display='none';
+  document.getElementById('btnHit').onclick=doSplitHit;
+  document.getElementById('btnStand').onclick=doSplitStand;
+}
+
+function doSplitHit(){
+  splitHit();
+  renderPlayer();
+  checkSplitStatus();
+}
+
+function checkSplitStatus(){
+  if(splitCount>21){
+    setMsg('Split hand bust! Dealer wins.','result lose');
+    endSplitRound('loss');
+  } else if(splitCount===21){
+    setMsg('BlackJack on split hand!','result win');
+    endSplitRound('win');
+  } else {
+    document.getElementById('btnHit').disabled=false;
+    document.getElementById('btnStand').disabled=false;
+    setMsg('Split hand: Hit or Stand?','info');
+  }
+}
+
+function doSplitStand(){
+  const r=resolveVsDealer(splitCount);
+  setMsg('Split hand: '+r.msg,'result '+r.cls);
+  endSplitRound(r.outcome);
+}
+
+function endSplitRound(outcome){
+  tally(outcome);
+  playingSplit=false; gameOver=true;
+  setButtons(false);
+  document.getElementById('btnNew').style.display='';
+  document.getElementById('btnHit').onclick=doHit;
+  document.getElementById('btnStand').onclick=doStand;
+}
+
+// ── Resolution ────────────────────────────────────────────────
+
+function resolveVsDealer(count){
+  if(dealerCount===21||(dealerCount>count&&dealerCount<=21))
+    return{msg:'Dealer wins.',cls:'lose',outcome:'loss'};
+  if(count===21||count>dealerCount||dealerCount>21)
+    return{msg:'You win! 🎉',cls:'win',outcome:'win'};
+  return{msg:"It's a tie.",cls:'tie',outcome:'tie'};
+}
+
+function tally(outcome){
+  if(outcome==='win'){ wins++; streak=streak<0?1:streak+1; }
+  else if(outcome==='loss'){ losses++; streak=streak>0?-1:streak-1; }
+  else{ ties++; streak=0; }
+  updateStats();
+}
+
+function endRound(outcome){
+  tally(outcome); gameOver=true; setButtons(false);
+  document.getElementById('btnNew').style.display='';
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+newGame();
+</script>
+</body>
+</html>
